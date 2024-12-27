@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt, rc_context, ticker
 from matplotlib.colors import LogNorm, same_color
 import matplotlib.patches as mpatches
 from matplotlib.testing.decorators import image_comparison
+from matplotlib.testing.decorators import check_figures_equal
 import pytest
 
 
@@ -823,3 +824,35 @@ def test_deprecated_apis():
         assert_array_equal(cs.tcolors, [c.get_edgecolor() for c in colls])
     with pytest.warns(mpl.MatplotlibDeprecationWarning, match="tlinewidths"):
         assert cs.tlinewidths == [c.get_linewidth() for c in colls]
+@pytest.mark.parametrize("paths", [
+    [],  # Test with an empty list of paths
+    [mpl.path.Path([(0, 0), (1, 1)])],  # Test with a single path
+    [mpl.path.Path([(0, 0), (1, 1)]), mpl.path.Path([(1, 0), (0, 1)])]  # Test with multiple paths
+])
+def test_set_paths_edge_cases(paths):
+    fig, ax = plt.subplots()
+    cs = ax.contour(np.random.rand(10, 10))
+    cs.set_paths(paths)
+    assert cs.get_paths() == paths
+
+@check_figures_equal(extensions=["png"])
+def test_set_paths_visual_consistency(fig_test, fig_ref):
+    # Create a reference contour plot
+    ax_ref = fig_ref.add_subplot()
+    x, y = np.meshgrid(np.linspace(-3, 3, 100), np.linspace(-3, 3, 100))
+    z = np.sin(x) * np.cos(y)
+    cs_ref = ax_ref.contour(x, y, z)
+
+    # Create a test contour plot and set paths from the reference
+    ax_test = fig_test.add_subplot()
+    cs_test = ax_test.contour(x, y, z)
+    cs_test.set_paths(cs_ref.get_paths())
+
+    # Ensure the visual output is consistent
+    assert cs_test.get_paths() == cs_ref.get_paths()
+
+def test_set_paths_mismatched_dimensions():
+    fig, ax = plt.subplots()
+    cs = ax.contour(np.random.rand(10, 10))
+    with pytest.raises(ValueError, match="Mismatched path dimensions"):
+        cs.set_paths([mpl.path.Path([(0, 0), (1, 1, 2)])])  # Invalid path
