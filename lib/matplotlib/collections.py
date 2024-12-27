@@ -207,7 +207,16 @@ class Collection(artist.Artist, cm.ScalarMappable):
         return self._paths
 
     def set_paths(self, paths):
-        raise NotImplementedError
+        """
+        Set the paths for the collection.
+
+        Parameters
+        ----------
+        paths : list of `~matplotlib.path.Path`
+            The paths that will make up the collection.
+        """
+        self._paths = paths
+        self.stale = True
 
     def get_transforms(self):
         return self._transforms
